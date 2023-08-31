@@ -41,6 +41,17 @@ def recognition_eyeglass(frame):
         x2, y2 = x + width, y + height
         cv2.rectangle(frame, (x, y), (x2, y2), (0, 255, 0), 3)
 
+        eye_relative_x, eye_relative_y = calculate_eye_position(frame, (x, y, width, height))
+        draw_center_rectangle(frame)  # Dibujar el rectángulo en el centro
+
+        rectangle_tolerance = 20  # Margen de error permitido
+        if abs(eye_relative_x) <= rectangle_tolerance and abs(eye_relative_y) <= rectangle_tolerance:
+            cv2.putText(frame, "Ojo en el centro del rectángulo", (x, y - 30), cv2.FONT_HERSHEY_SIMPLEX, 0.5,
+                        (0, 255, 0), 1)
+        else:
+            instructions = f"Mover: X {eye_relative_x}, Y {eye_relative_y}"
+            cv2.putText(frame, instructions, (x, y - 30), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 1)
+
         eye_roi = frame[y:y2, x:x2]
         gray_eye_roi = cv2.cvtColor(eye_roi, cv2.COLOR_BGR2GRAY)
         blurred_eye_roi = cv2.GaussianBlur(gray_eye_roi, (7, 7), 0)
@@ -62,6 +73,33 @@ def recognition_eyeglass(frame):
         return eye_roi
     else:
         return None
+
+
+def draw_center_rectangle(frame):
+    frame_height, frame_width, _ = frame.shape
+    center_x = frame_width // 2
+    center_y = frame_height // 2
+    rectangle_size = 100  # Tamaño del rectángulo
+
+    top_left = (center_x - rectangle_size // 2, center_y - rectangle_size // 2)
+    bottom_right = (center_x + rectangle_size // 2, center_y + rectangle_size // 2)
+
+    cv2.rectangle(frame, top_left, bottom_right, (0, 0, 255), 2)
+
+
+def calculate_eye_position(frame, eye_box):
+    eye_x, eye_y, eye_width, eye_height = eye_box
+    frame_height, frame_width, _ = frame.shape
+
+    # Calculate the center of the eye box
+    eye_center_x = eye_x + eye_width // 2
+    eye_center_y = eye_y + eye_height // 2
+
+    # Calculate the position relative to the center of the frame
+    relative_x = eye_center_x - frame_width // 2
+    relative_y = eye_center_y - frame_height // 2
+
+    return relative_x, relative_y
 
 
 def combine_frames(original_frame, processed_frame):
